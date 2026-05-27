@@ -1,112 +1,53 @@
-# Machine Learning Project – Sales & Customer Behaviour Insights
+# 💳 HỆ THỐNG DỰ BÁO RỦI RO TÍN DỤNG BẰNG THUẬT TOÁN HỌC MÁY
+> **Môn học:** Học máy ứng dụng | **Đơn vị:** Đại học Kinh tế TP.HCM (UEH)
 
-Dự án sử dụng bộ dữ liệu bán hàng gồm ba bảng chính: thông tin giao dịch, thông tin khách hàng và thông tin sản phẩm. Mục tiêu của project là chuẩn bị dữ liệu sạch để phục vụ các bước phân tích và xây dựng mô hình học máy ở giai đoạn sau.
+---
 
-Ở giai đoạn hiện tại, repo tập trung vào phần **data preprocessing / data cleaning**. Phần này chỉ làm sạch từng bảng dữ liệu riêng lẻ, chưa thực hiện join bảng, chưa tạo feature liên bảng và chưa huấn luyện mô hình.
+## 👥 1. NHÓM THỰC HIỆN (NHÓM 5 - NGÀNH KỸ THUẬT PHẦN MỀM)
+* **Trần Văn Ngân** (Trưởng nhóm)
+* **Huỳnh Nhật Gia Lạc**
+* **Nguyễn Hoàng Minh** 
+* **Phạm Thành Nhân** 
+* **Hồ Xuân Lộc** 
 
-## Dataset
+---
 
-Dữ liệu đầu vào gồm ba file CSV:
+## 🛠️ 2. QUY TRÌNH TRIỂN KHAI PHÒNG CHỐNG DATA LEAKAGE (PIPELINE)
 
-```text
-data/raw/
-├── sales_data.csv
-├── customer_info.csv
-└── product_info.csv
-```
+Hệ thống được thiết kế theo quy trình khép kín nhằm bảo vệ tính khách quan của dữ liệu:
+1.  **EDA & Lọc Outliers:** Phát hiện lỗi hệ thống bằng Boxplot (`person_age` > 100, `person_emp_length` > 60) và loại bỏ. Xác định `loan_percent_income` và `loan_grade` có độ tương quan gốc cao nhất với mục tiêu.
+2.  **Chia tách dữ liệu:** Thực hiện chia tập Train/Test tỷ lệ 80/20 với `stratify=y` trước khi điền khuyết (Imputation) nhằm triệt tiêu hoàn toàn rủi ro rò rỉ thông tin tập Test.
+3.  **Phân nhánh bệ phóng cho từng mô hình:**
+    * *Kiến trúc LightGBM:* Giữ nguyên `NaN`, ép kiểu chữ thô sang kiểu danh mục (`category`).
+    * *Kiến trúc Random Forest:* Điền khuyết theo Median tập Train và áp dụng One-Hot Encoding.
+    * *Kiến trúc Logistic Regression:* Tiếp quản dữ liệu mã hóa của RF và Chuẩn hóa phân phối (`StandardScaler`).
 
-Ý nghĩa từng bảng:
+---
 
-| File | Nội dung |
-|---|---|
-| `sales_data.csv` | Dữ liệu giao dịch bán hàng, gồm mã đơn hàng, khách hàng, sản phẩm, số lượng, giá, ngày đặt hàng, trạng thái giao hàng, phương thức thanh toán, khu vực và chiết khấu. |
-| `customer_info.csv` | Thông tin khách hàng, gồm mã khách hàng, email, ngày đăng ký, giới tính, khu vực và hạng thành viên. |
-| `product_info.csv` | Thông tin sản phẩm, gồm mã sản phẩm, tên sản phẩm, danh mục, ngày ra mắt, giá gốc và mã nhà cung cấp. |
+## 📊 3. KẾT QUẢ THỰC NGHIỆM ĐỐI CHIẾU (TẬP TEST)
 
-## Preprocessing scope
+Bảng tổng hợp năng lực dự báo thực tế đối với nhóm mục tiêu **Vỡ nợ (Nhãn 1)**:
 
-Các bước đã thực hiện trong phần preprocessing:
+| Mô hình | Accuracy | Precision | Recall | F1-score | AUC-ROC | Time (s) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Logistic Regression** | 81.28% | 54.53% | **78.97%** | 64.51% | 0.8765 | **0.241s** |
+| **Random Forest** | 92.36% | 87.94% | 74.80% | 80.84% | 0.9352 | 2.403s |
+| **LightGBM (Champion)** | **93.18%** | **88.46%** | **78.61%** | **83.24%** | **0.9503** | 3.457s |
 
-- Đọc ba bảng dữ liệu gốc.
-- Kiểm tra và xử lý giá trị thiếu.
-- Chuẩn hóa dữ liệu dạng chữ và các nhãn phân loại bị sai/không nhất quán.
-- Chuyển đổi kiểu dữ liệu số và ngày tháng.
-- Kiểm tra outlier bằng phương pháp IQR.
-- Thống kê mô tả cho các biến số chính.
-- Vẽ histogram và boxplot trong notebook.
-- Xuất ba file dữ liệu đã clean.
+### 💡 Biện giải cốt lõi từ dữ liệu thực tế:
+* **Logistic Regression (Baseline):** Tốc độ nhanh nhất, Recall cao ($78.97\%$) nhưng Precision quá thấp ($54.53\%$), gây tỷ lệ báo động giả lớn (từ chối nhầm nhiều khách hàng tốt).
+* **Random Forest:** Bộ lọc chuẩn xác (Precision $87.94\%$) nhưng độ bao phủ kém (Recall tụt xuống $74.80\%$), dễ làm lọt lưới nợ xấu gây mất vốn gốc ngân hàng.
+* **LightGBM (Mô hình tối ưu):** Nhờ cơ chế mở rộng số lá (`num_leaves=63`) kết hợp trọng số phạt lệch nhãn (`scale_pos_weight`), LightGBM đạt điểm **F1-score tối quý $83.24\%$** và **AUC-ROC $0.9503$**. Mô hình dung hòa hoàn hảo: vừa giữ bộ lọc siêu chuẩn ($88.46\%$), vừa bao phủ trọn vẹn rủi ro ($78.61\%$).
 
-## Folder structure
+---
 
-```text
-.
-├── README.md
-├── data/
-│   ├── raw/
-│   │   ├── sales_data.csv
-│   │   ├── customer_info.csv
-│   │   └── product_info.csv
-│   └── processed/
-│       ├── cleaned_sales_data.csv
-│       ├── cleaned_customer_info.csv
-│       └── cleaned_product_info.csv
-├── notebooks/
-│   └── 01_data_preprocessing.ipynb
-└── src/
-    └── preprocess_clean_data.py
-```
+## 👁️ 4. GIẢI THÍCH MÔ HÌNH VỚI SHAP VALUE (XAI)
+Để mở "hộp đen" thuật toán, nhóm ứng dụng kỹ thuật giải thích Học máy hiện đại:
+* **Summary Plot (Toàn cục):** Chứng minh tỷ lệ khoản vay trên thu nhập (`loan_percent_income`) và lãi suất (`loan_int_rate`) càng cao (chấm đỏ) càng đẩy xác suất dự báo về phía Vỡ nợ.
+* **Waterfall Plot (Cục bộ):** Trực quan hóa chi tiết lộ trình cộng/trừ điểm rủi ro dựa trên các chỉ số cá thể để minh bạch hóa lý do phê duyệt hoặc từ chối của một hồ sơ cụ thể.
 
-## File description
+---
 
-| File | Công dụng |
-|---|---|
-| `notebooks/01_data_preprocessing.ipynb` | Notebook trình bày quá trình preprocessing: đọc dữ liệu, kiểm tra missing values, thống kê mô tả, kiểm tra outlier, vẽ histogram/boxplot và xuất dữ liệu clean. |
-| `src/preprocess_clean_data.py` | Script Python dùng để chạy lại pipeline làm sạch dữ liệu từ raw CSV và xuất ra các file clean. |
-| `data/processed/cleaned_sales_data.csv` | Bảng giao dịch sau khi làm sạch. |
-| `data/processed/cleaned_customer_info.csv` | Bảng khách hàng sau khi làm sạch. |
-| `data/processed/cleaned_product_info.csv` | Bảng sản phẩm sau khi làm sạch. |
-
-## How to run
-
-Cài các thư viện cần thiết:
-
-```bash
-pip install pandas matplotlib jupyter
-```
-
-Chạy script preprocessing từ thư mục gốc của repo:
-
-```bash
-python src/preprocess_clean_data.py
-```
-
-Script sẽ đọc dữ liệu từ:
-
-```text
-data/raw/
-```
-
-và xuất dữ liệu đã làm sạch vào:
-
-```text
-data/processed/
-```
-
-Để xem thống kê mô tả và biểu đồ phân phối, mở notebook:
-
-```text
-notebooks/01_data_preprocessing.ipynb
-```
-
-## Output
-
-Sau khi chạy preprocessing, các file chính cần dùng cho bước tiếp theo là:
-
-```text
-data/processed/cleaned_sales_data.csv
-data/processed/cleaned_customer_info.csv
-data/processed/cleaned_product_info.csv
-```
-
-Ba file này giữ nguyên cấu trúc bảng riêng biệt để thành viên phụ trách data integration / feature engineering xử lý ở bước sau.
-
+## 🚀 5. HƯỚNG DẪN CÀI ĐẶT & CHẠY MÃ NGUỒN
+1.  **Cài đặt thư viện:** `pip install pandas numpy matplotlib seaborn scikit-learn lightgbm shap jinja2`
+2.  **Khởi chạy:** Mở tệp `credit_risk_scoring.ipynb` trên Jupyter Notebook và chọn `Run All`. Môi trường yêu cầu có sẵn tệp `credit_risk_dataset.csv` tại thư mục gốc để nạp Pipeline tự động.
