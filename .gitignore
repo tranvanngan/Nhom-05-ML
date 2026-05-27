@@ -6,7 +6,7 @@ __pycache__/
 
 # Jupyter Notebook
 .ipynb_checkpoints/
-*.ipynb
+# *.ipynb 
 
 # Virtual environment
 venv/
@@ -19,8 +19,8 @@ env/
 
 # Data
 data/raw/
-*.csv
-*.xlsx
+# *.csv
+# *.xlsx
 
 # OS metadata
 .DS_Store
